@@ -159,22 +159,24 @@ nll = function(gn) {
 clusterExport(cl, c("normx", "normddx"))
 optim(c(0.5,2.5), nll, lower=c(0.01,2.01), upper=c(0.99,10), method="L-BFGS-B")
 
-# t + norm model (modelling constant)
-weightedlogliknu =
+# negative log-likelihood
+# assuming allele substitution effect of SNPs ~ t distribution
+# assuming environmental effect ~ normal distribution
+# modelling constant term of LD score regresssion
+weightedloglik_onepop_snpt_envnorm_const =
   function(x) { # global variables: normx normddx
-    g = x[1]; # not used
+    g = x[1];
     sqrts = x[2];
     y = x[3];
     nu = x[4];
     c = x[5]; # constant
-#    z = (y - c*normx);
     z = (y - c*sqrt(1-g)*normx);
     log( 
       sum(
         dt(x=z/sqrts, df=nu)/sqrts *
           normddx))
   }
-nll = function(gnc) {
+nll_onepop_snpt_envnorm_const = function(gnc) {
   g = gnc[1]; #heritability
   nu = gnc[2];
   c = gnc[3];
@@ -189,16 +191,21 @@ nll = function(gnc) {
                     nu,
                     c),
                   1,
-                  weightedlogliknu)
+                  weightedloglik_onepop_snpt_envnorm_const)
   )
 }
-clusterExport(cl, c("normx", "normddx"))
-optim(c(0.5,2.5,1), nll, lower=c(0.01,2.01,0.5), upper=c(0.99,10,1.5), method="L-BFGS-B")
+# estimate heritability, nu for t-distribution, constant for LD score regression
+optim(c(0.5, 2.5, 1),
+      nll_onepop_snpt_envnorm_const,
+      lower=c(0.01, 2.01, 0.5),
+      upper=c(0.99, 10, 1.5),
+      method="L-BFGS-B")
 
-
-
-# t + norm model (modelling GC correction)
-nll = function(gnl) {
+# negative log-likelihood assuming that
+#   allele substitution effect of SNPs follows t distribution
+#   environmental effect follows normal distribution
+#   modelling GC correction
+nll_onepop_snpt_envnorm_GC = function(gnl) {
   n = length(xkeep);
   m = length(normx);
   g = gnl[1]; #heritability
@@ -329,27 +336,6 @@ weightedlogliknu =
                              (y2 - sqrt(1-h2)*normx2)/sqrtv2)^2 ) ) ) *
           normddx1dx2))
   }
-# modelling constant
-weightedlogliknu =
-  function(x) { # global variables: h1 h2 c1 c2 normx1 normx2 normddx1dx2
-    sqrtv1 = x[1];
-    sqrtv2 = x[2];
-    v  = x[3]; # correlation coefficient
-    y1 = x[4];
-    y2 = x[5];
-    nu = x[6];
-    log(
-      sum(
-        exp( # -log(2*pi)
-          -log((nu-2)/nu) -
-            0.5*log(1-v^2) -
-            0.5*(nu+2)*log(1 + 1/(nu-2)*(
-              0.5/(1+v)*((y1 - c1*sqrt(1-h1)*normx1)/sqrtv1 +
-                           (y2 - c2*sqrt(1-h2)*normx2)/sqrtv2)^2 +
-                0.5/(1-v)*((y1 - c1*sqrt(1-h1)*normx1)/sqrtv1 - 
-                             (y2 - c2*sqrt(1-h2)*normx2)/sqrtv2)^2 ) ) ) *
-          normddx1dx2))
-  }
 
 source("~/Documents/R/bivt/bivt.R", chdir=TRUE)
 # two separte nu's (nu1 nu2) as for dbivt
@@ -455,35 +441,67 @@ nll = function(nu) {
 clusterExport(cl, c("h1", "h2", "gencor", "normx1", "normx2", "normddx1dx2"))
 optimize(nll, lower=2.01, upper=10)
 
-# t + norm; infer unique nu and gencor
-lambdaGC1=1; lambdaGC2=1;
-nll = function(nugencor) {
-  nu = nugencor[1];
-  gencor = nugencor[2];
-  sqrtv1 = sqrt(h1*((N1max/M)*x1keep + 1));
-  sqrtv2 = sqrt(h2*((N2max/M)*x2keep + 1));
-  v = (NXmax/M)*gencor*sqrt(h1)*sqrt(h2)*xXkeep/sqrtv1/sqrtv2; # gencor as genetic-correlation
-  #v = r; # correlation of explained variance model
-  sum(wkeep *
-        #      -apply(
+# estimate unique nu and gencor
+# negative log-likelihood
+# assuming allele substitution effect of SNPs ~ t distribution
+# assuming environmental effect ~ normal distribution
+# modelling constant term of LD score regresssion
+weightedloglik_twopop_snpt_envnorm_const =
+  function(x) {
+    sqrtv1 = x[1];
+    sqrtv2 = x[2];
+    v      = x[3]; # correlation coefficient
+    y1     = x[4];
+    y2     = x[5];
+    nu     = x[6];
+    h1     = x[7];
+    h2     = x[8];
+    c1     = x[9];
+    c2     = x[10];
+    log(
+      sum(
+        exp( # -log(2*pi)
+          -log((nu-2)/nu) -
+            0.5*log(1-v^2) -
+            0.5*(nu+2)*log(1 + 1/(nu-2)*(
+              0.5/(1+v)*((y1 - c1*sqrt(1-h1)*normx1)/sqrtv1 +
+                           (y2 - c2*sqrt(1-h2)*normx2)/sqrtv2)^2 +
+                0.5/(1-v)*((y1 - c1*sqrt(1-h1)*normx1)/sqrtv1 - 
+                             (y2 - c2*sqrt(1-h2)*normx2)/sqrtv2)^2 ) ) ) *
+          normddx1dx2))
+  }
+nll_twopop_snpt_envnorm_const =
+  function(gencornu, h1, h2, c1, c2) {
+    gencor = gencornu[1];
+    nu = gencornu[2];
+    sqrtv1 = sqrt(h1*((N1max/M)*x1keep + 1));
+    sqrtv2 = sqrt(h2*((N2max/M)*x2keep + 1));
+    v = (NXmax/M)*gencor*sqrt(h1)*sqrt(h2)*xXkeep/sqrtv1/sqrtv2; # gencor as genetic-correlation
+    #v = r; # correlation of explained variance model
+    sum(wkeep *
         -parApply(cl,   # parallel
                   cbind(
-                    sqrtv1, # round(sqrtv1, digits=2),   # round for cache
+                    sqrtv1,
                     sqrtv2,
                     v,
-                    y1keep*sqrt(lambdaGC1),
-                    y2keep*sqrt(lambdaGC2),
-                    nu),
+                    y1keep,
+                    y2keep,
+                    nu,
+                    h1, h2, c1, c2 # fixed
+                    ),
                   1,
-                  weightedlogliknu)
+                  weightedloglik_twopop_snpt_envnorm_const)
   )
 }
-clusterExport(cl, c("h1", "h2", "normx1", "normx2", "normddx1dx2"))
-clusterExport(cl, c("h1", "h2", "c1", "c2", "normx1", "normx2", "normddx1dx2"))
-#needs finite values of 'fn'
-optim(c(5,0), nll, lower=c(2.01,-0.99), upper=c(10,0.99), method="L-BFGS-B") 
-# Nelder-Mead; allows fn=Inf; robust but slow
-# optim(0, nll) # AVOID; sometimes caught in local optima near 0
+optim(c(0, 5),
+      h1 = 0.06630128,
+      h2 = 0.1180501,
+      c1 = 0.98506231,
+      c2 = 0.9958312,
+      nll_twopop_snpt_envnorm_const,
+      lower=c(-0.99, 2.01),
+      upper=c(0.99, 10),
+      method="L-BFGS-B") 
 
 
 
