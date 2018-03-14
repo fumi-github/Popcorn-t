@@ -74,3 +74,13 @@ gwaspowerncp = function (n, ncp, alpha) {
     pf(threshold, 1, n-2, ncp=ncp, lower.tail=F);
   }
 }
+
+# For numerical integration
+dx = 0.25;
+normx = seq(-4, 4, dx);
+normddx = dnorm(normx)*dx;
+normx1 = as.numeric(matrix(normx, nrow=length(normx), ncol=length(normx), byrow=T))
+normx2 = as.numeric(matrix(normx, nrow=length(normx), ncol=length(normx), byrow=F))
+normddx1dx2 = dnorm(normx1)*dx*dnorm(normx2)*dx;
+rm(dx);
+lockBinding(c("normx", "normddx", "normx1", "normx2", "normddx1dx2"), .GlobalEnv);
