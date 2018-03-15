@@ -139,6 +139,7 @@ nll_onepop_snpt_envnorm_intercept = function(gnc) {
 # assuming allele substitution effect of SNPs ~ t distribution
 # assuming environmental effect ~ normal distribution
 # modelling GC correction
+# [Not good] does not converge as expected
 nll_onepop_snpt_envnorm_GC = function(gnl) {
   n = length(xkeep);
   m = length(normx);
@@ -158,48 +159,6 @@ nll_onepop_snpt_envnorm_GC = function(gnl) {
           %*%
             matrix(normddx)))
 }
-
-
-
-
-# # t + norm model (not modelling stratification)
-# nll = function(gn) {
-#   n = length(xkeep);
-#   m = length(normx);
-#   g = gn[1]; #heritability
-#   nu = gn[2];
-#   v = g*(Nmax/M*xkeep + 1);
-#   s = v*(1-2/nu); # divide by the variance of standard t
-#   sum(wkeep *
-#         -log(
-#           colSums(t(
-#           (dt(x=(matrix(ykeep,nrow=n,ncol=m,byrow=F)
-#                  -sqrt(1-g)*
-#                    matrix(normx,nrow=n,ncol=m,byrow=T))/
-# #                matrix(sqrt(s),nrow=n,ncol=m,byrow=F),
-#                 sqrt(s),
-#               df=nu) /
-# #             matrix(sqrt(s),nrow=n,ncol=m,byrow=F))
-#               sqrt(s))
-# )*normddx)
-# #%*%
-# #            matrix(normddx)
-# ))
-# }
-# optim(c(0.5,2.5), nll, lower=c(0.01,2.01), upper=c(0.99,10), method="L-BFGS-B")
-#optim(0.5, nll, lower=0.01, upper=0.99, method="L-BFGS-B")
-#optim(2.5, nll, lower=2.01, upper=10, method="L-BFGS-B")
-# EASSBP Zsim1 nu2.5_trial0 0.07161543 3.95857305
-# EURSBP Zsim2 nu2.5_trial0 0.07886822 4.50401533
-# EASSBP Zsim1 nu3_trial0   0.07240888 5.09570104
-# EURSBP Zsim2 nu3_trial0   0.07653706 5.96124694
-# EASSBP Zsim1 nu4_trial0   0.07216395 10.00000000
-# EURSBP Zsim2 nu4_trial0   0.07808539 10.00000000
-
-
-
-
-
 
 
 ###
