@@ -84,8 +84,8 @@ wkeep = 1/pmax(1,
 optim(c(0, 5),
       h1 = 0.06630128, # heritability
       h2 = 0.1180501,
-      c1 = 0.98506231, # intercept for LD score regression
-      c2 = 0.9958312,
+      a1 = 0.98506231, # intercept for LD score regression
+      a2 = 0.9958312,
       nll_twopop_snpt_envnorm_intercept,
       lower=c(-0.99, 2.01),
       upper=c(0.99, 10),
