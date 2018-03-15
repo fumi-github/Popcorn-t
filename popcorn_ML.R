@@ -1,76 +1,54 @@
-
-
 ### SNP-wise ML
-# single norm model
-nll = function(ag) {
-  a = ag[1]; # intercept for stratification
-  g = ag[2]; # heritability
+
+cat('
+Estimate heritability parameters by
+optim(initial_value, nll, lower, upper, method="L-BFGS-B")
+
+initial lower upper parameter
+0.5     0.01  0.99  heritability
+0       -0.99 0.99  genetic corelation
+2.5     2.01  10    nu for t-distribution (for one population; historical & irrelevant?)
+5       2.01  10    nu for t-distribution (for two populations)
+1       0.5   1.5   intercept of LD score regression
+1       0.5   1.5   lambdaGC of genomic control
+')
+
+
+###
+### For one population
+### 
+
+# negative log-likelihood
+# assuming association Z statistics ~ normal distribution
+# modelling intercept of LD score regresssion
+nll_onepop_Znorm_intercept = function(ga) {
+  g = ga[1]; # heritability
+  a = ga[2]; # intercept
   v = a + (Nmax/M)*g*xkeep;
   #  0.5 * sum(wkeep * (log(v) + ykeep/v)) # ykeep=Z^2, simplified
   #  0.5 * sum(wkeep * (log(v) + ykeep/v + log(2*pi))) # ykeep=Z^2
   #  0.5 * sum(wkeep * (log(v) + ykeep^2/v + log(2*pi))) # ykeep=Z
   sum(wkeep * -dnorm(x=ykeep, sd=sqrt(v), log=TRUE)) # ykeep=Z
 }
-#optim(c(1,0.5), nll)
-optim(c(1,0.5), nll, lower=c(0,0.01), upper=c(2,0.99), method="L-BFGS-B")
-### RA (EAS vs EUR)
-# score1 0.1806062
-# score2 0.1286437
-# scoreX 0.11246498
-0.11246498/sqrt(0.1806062*0.1286437) #0.7378307
-### SBP (EAS vs EUR)
-# score1 0.08438481
-# score2 0.06834101
-# scoreX 0.104603500
-0.104603500/sqrt(0.08438481*0.06834101) #1.377442
-### SBP (JP vs EASwoJP; one population)
-# score1 0.09184674
-# score2 0.1828195
-# scoreX 0.1117416
-0.1117416/sqrt(0.09184674*0.1828195) #0.8623265
-### SBP (JP vs EASwoJP; one population) gene_effect
-# score1 0.08809854
-# score2 0.1565064
-# scoreX 0.1106435
-0.1106435/sqrt(0.08809854*0.1565064) #0.9422703
 
-# single t model
-nll = function(agn) {
-  a = agn[1]; # intercept for stratification
-  g = agn[2]; # heritability
-  nu = agn[3];
+# negative log-likelihood
+# assuming association Z statistics ~ t-distribution
+# modelling intercept of LD score regresssion
+# [Not good] This model converges to intercept=10
+nll_onepop_Zt_intercept = function(gna) {
+  g = gna[1]; # heritability
+  nu = gna[2];
+  a = gna[3]; # intercept
   v = a + (Nmax/M)*g*xkeep;
   s = v*(1-2/nu); # divide by the variance of standard t
   sum(wkeep * -log( dt(x=ykeep/sqrt(s), df=nu)/sqrt(s) ))
 }
-optim(c(1,0.5,2.5), nll, lower=c(0,0.01,2.01), upper=c(2,0.99,10), method="L-BFGS-B")
-# EASSBP 1.117701  0.096621 10.000000
-# EASRA  1.012467  0.201768 10.000000
-# EASRA  1.288153  0.236272 fix=4.2
-# EURSBP 1.026371  0.254781 10.107019(upper=20)
 
-library(mvtnorm)
-
-# model two distributions, and pre-integrate one
-#dx=0.5; normx=seq(-10,10,dx);
-dx=0.25; normx=seq(-4,4,dx); #better
-normddx = dnorm(normx)*dx;
-sum(normddx)
-#
-sum(dnorm(3 - sqrt(0.7)*normx, sd=sqrt(0.3))*normddx)
-dnorm(3)
-#
-# two dimensinal
-normx1 = as.numeric(matrix(normx, nrow=length(normx), ncol=length(normx), byrow=T))
-normx2 = as.numeric(matrix(normx, nrow=length(normx), ncol=length(normx), byrow=F))
-normddx1dx2 = dnorm(normx1)*dx*dnorm(normx2)*dx;
-sum(normddx1dx2)
-
-
-
-
-# norm + norm model (not modelling stratification)
-nll = function(g) { #heritability
+# negative log-likelihood
+# assuming allele substitution effect of SNPs ~ normal distribution
+# assuming environmental effect ~ normal distribution
+# [Not good] nll value can become infinite near boundaries of 0 < g < 1
+nll_onepop_snpnorm_envnorm = function(g) { #heritability
   n = length(xkeep);
   m = length(normx);
   v = g*(Nmax/M*xkeep + 1);
@@ -88,7 +66,99 @@ nll = function(g) { #heritability
           %*%
             matrix(normddx)))
 }
-optim(0.5, nll, lower=0.01, upper=0.99, method="L-BFGS-B")
+
+# negative log-likelihood
+# assuming allele substitution effect of SNPs ~ t distribution
+# assuming environmental effect ~ normal distribution
+weightedloglik_onepop_snpt_envnorm =
+  function(x) {
+    g = x[1];
+    sqrts = x[2];
+    y = x[3];
+    nu = x[4];
+    z = (y - sqrt(1-g)*normx);
+    log( 
+      sum(
+        dt(x=z/sqrts, df=nu)/sqrts *
+          normddx))
+  }
+nll_onepop_snpt_envnorm = function(gn) {
+  g = gn[1]; #heritability
+  nu = gn[2];
+  v = g*(Nmax/M*xkeep + 1);
+  s = v*(1-2/nu); # divide by the variance of standard t
+  sum(wkeep *
+        -parApply(cl,   # parallel
+                  cbind(
+                    g,
+                    sqrt(s),
+                    ykeep,
+                    nu),
+                  1,
+                  weightedloglik_onepop_snpt_envnorm)
+  )
+}
+
+# negative log-likelihood
+# assuming allele substitution effect of SNPs ~ t distribution
+# assuming environmental effect ~ normal distribution
+# modelling intercept of LD score regresssion
+weightedloglik_onepop_snpt_envnorm_intercept =
+  function(x) { # global variables: normx normddx
+    g = x[1];
+    sqrts = x[2];
+    y = x[3];
+    nu = x[4];
+    c = x[5]; # intercept
+    z = (y - c*sqrt(1-g)*normx);
+    log( 
+      sum(
+        dt(x=z/sqrts, df=nu)/sqrts *
+          normddx))
+  }
+nll_onepop_snpt_envnorm_intercept = function(gnc) {
+  g = gnc[1]; #heritability
+  nu = gnc[2];
+  c = gnc[3];
+  v = g*(Nmax/M*xkeep + 1);
+  s = v*(1-2/nu); # divide by the variance of standard t
+  sum(wkeep *
+        -parApply(cl,   # parallel
+                  cbind(
+                    g,
+                    sqrt(s),
+                    ykeep,
+                    nu,
+                    c),
+                  1,
+                  weightedloglik_onepop_snpt_envnorm_intercept)
+  )
+}
+
+# negative log-likelihood
+# assuming allele substitution effect of SNPs ~ t distribution
+# assuming environmental effect ~ normal distribution
+# modelling GC correction
+nll_onepop_snpt_envnorm_GC = function(gnl) {
+  n = length(xkeep);
+  m = length(normx);
+  g = gnl[1]; #heritability
+  nu = gnl[2];
+  lamdaGC = gnl[3];
+  v = g*(Nmax/M*xkeep + 1);
+  s = v*(1-2/nu); # divide by the variance of standard t
+  sum(wkeep *
+        -log(
+          (dt(x=(matrix(ykeep,nrow=n,ncol=m,byrow=F)*sqrt(lamdaGC)
+                 -sqrt(1-g)*
+                   matrix(normx,nrow=n,ncol=m,byrow=T))/
+                matrix(sqrt(s),nrow=n,ncol=m,byrow=F),
+              df=nu) /
+             matrix(sqrt(s),nrow=n,ncol=m,byrow=F))
+          %*%
+            matrix(normddx)))
+}
+
 
 
 
@@ -127,125 +197,14 @@ optim(0.5, nll, lower=0.01, upper=0.99, method="L-BFGS-B")
 # EURSBP Zsim2 nu4_trial0   0.07808539 10.00000000
 
 
-# t + norm model (not modelling stratification)
-weightedlogliknu =
-  function(x) { # global variables: normx normddx
-    g = x[1];
-    sqrts = x[2];
-    y = x[3];
-    nu = x[4];
-    z = (y - sqrt(1-g)*normx);
-    log( 
-      sum(
-        dt(x=z/sqrts, df=nu)/sqrts *
-          normddx))
-  }
-nll = function(gn) {
-  g = gn[1]; #heritability
-  nu = gn[2];
-  v = g*(Nmax/M*xkeep + 1);
-  s = v*(1-2/nu); # divide by the variance of standard t
-  sum(wkeep *
-        -parApply(cl,   # parallel
-                  cbind(
-                    g,
-                    sqrt(s),
-                    ykeep,
-                    nu),
-                  1,
-                  weightedlogliknu)
-  )
-}
-clusterExport(cl, c("normx", "normddx"))
-optim(c(0.5,2.5), nll, lower=c(0.01,2.01), upper=c(0.99,10), method="L-BFGS-B")
-
-# negative log-likelihood
-# assuming allele substitution effect of SNPs ~ t distribution
-# assuming environmental effect ~ normal distribution
-# modelling constant term of LD score regresssion
-weightedloglik_onepop_snpt_envnorm_const =
-  function(x) { # global variables: normx normddx
-    g = x[1];
-    sqrts = x[2];
-    y = x[3];
-    nu = x[4];
-    c = x[5]; # constant
-    z = (y - c*sqrt(1-g)*normx);
-    log( 
-      sum(
-        dt(x=z/sqrts, df=nu)/sqrts *
-          normddx))
-  }
-nll_onepop_snpt_envnorm_const = function(gnc) {
-  g = gnc[1]; #heritability
-  nu = gnc[2];
-  c = gnc[3];
-  v = g*(Nmax/M*xkeep + 1);
-  s = v*(1-2/nu); # divide by the variance of standard t
-  sum(wkeep *
-        -parApply(cl,   # parallel
-                  cbind(
-                    g,
-                    sqrt(s),
-                    ykeep,
-                    nu,
-                    c),
-                  1,
-                  weightedloglik_onepop_snpt_envnorm_const)
-  )
-}
-# estimate heritability, nu for t-distribution, constant for LD score regression
-optim(c(0.5, 2.5, 1),
-      nll_onepop_snpt_envnorm_const,
-      lower=c(0.01, 2.01, 0.5),
-      upper=c(0.99, 10, 1.5),
-      method="L-BFGS-B")
-
-# negative log-likelihood assuming that
-#   allele substitution effect of SNPs follows t distribution
-#   environmental effect follows normal distribution
-#   modelling GC correction
-nll_onepop_snpt_envnorm_GC = function(gnl) {
-  n = length(xkeep);
-  m = length(normx);
-  g = gnl[1]; #heritability
-  nu = gnl[2];
-  lamdaGC = gnl[3];
-  v = g*(Nmax/M*xkeep + 1);
-  s = v*(1-2/nu); # divide by the variance of standard t
-  sum(wkeep *
-        -log(
-          (dt(x=(matrix(ykeep,nrow=n,ncol=m,byrow=F)*sqrt(lamdaGC)
-                 -sqrt(1-g)*
-                   matrix(normx,nrow=n,ncol=m,byrow=T))/
-                matrix(sqrt(s),nrow=n,ncol=m,byrow=F),
-              df=nu) /
-             matrix(sqrt(s),nrow=n,ncol=m,byrow=F))
-          %*%
-            matrix(normddx)))
-}
-optim(c(0.5,2.5,1), nll, lower=c(0.01,2.01,0.5), upper=c(0.99,10,1.5), method="L-BFGS-B")
 
 
 
-# # fit all parameters at once
-# nlls = function(ag) {
-#   a1 = ag[1]; a2 = ag[2]; aX = ag[3];
-#   h1 = ag[4]; h2 = ag[5]; hX = ag[6]; #heritability
-#   v1 = a1 + (Ns[[1]]/M)*h1*xkeeps[[1]];
-#   v2 = a2 + (Ns[[2]]/M)*h2*xkeeps[[2]];
-#   vX = aX + (Ns[[3]]/M)*sqrt(h1*h2)*hX*xkeeps[[3]];
-#   0.5 * sum(wkeeps[[1]] * (log(v1) + ykeeps[[1]]/v1)) +
-#     0.5 * sum(wkeeps[[2]] * (log(v2) + ykeeps[[2]]/v2)) +
-#     0.5 * sum(wkeeps[[3]] * (log(vX) + ykeeps[[3]]/vX))
-# }
-# optim(c(0.1,0.1,0.1, 0.1,0.1,0.5), nlls) #not converge well
-# optim(c(0.1,0.1,0.1, 0.1,0.1,0.5), nlls,
-#       lower=c(0,0,0, 0.01,0.01,0.01),
-#       upper=c(2,2,2, 1,1,1), method="L-BFGS-B")
-# #0.09225807 0.18312765 0.85959073
 
 
+###
+### For two populations
+### 
 
 
 #### corr coeff
@@ -445,8 +404,8 @@ optimize(nll, lower=2.01, upper=10)
 # negative log-likelihood
 # assuming allele substitution effect of SNPs ~ t distribution
 # assuming environmental effect ~ normal distribution
-# modelling constant term of LD score regresssion
-weightedloglik_twopop_snpt_envnorm_const =
+# modelling intercept of LD score regresssion
+weightedloglik_twopop_snpt_envnorm_intercept =
   function(x) {
     sqrtv1 = x[1];
     sqrtv2 = x[2];
@@ -470,7 +429,7 @@ weightedloglik_twopop_snpt_envnorm_const =
                              (y2 - c2*sqrt(1-h2)*normx2)/sqrtv2)^2 ) ) ) *
           normddx1dx2))
   }
-nll_twopop_snpt_envnorm_const =
+nll_twopop_snpt_envnorm_intercept =
   function(gencornu, h1, h2, c1, c2) {
     gencor = gencornu[1];
     nu = gencornu[2];
@@ -490,7 +449,7 @@ nll_twopop_snpt_envnorm_const =
                     h1, h2, c1, c2 # fixed
                     ),
                   1,
-                  weightedloglik_twopop_snpt_envnorm_const)
+                  weightedloglik_twopop_snpt_envnorm_intercept)
   )
 }
 optim(c(0, 5),
@@ -498,7 +457,7 @@ optim(c(0, 5),
       h2 = 0.1180501,
       c1 = 0.98506231,
       c2 = 0.9958312,
-      nll_twopop_snpt_envnorm_const,
+      nll_twopop_snpt_envnorm_intercept,
       lower=c(-0.99, 2.01),
       upper=c(0.99, 10),
       method="L-BFGS-B") 
@@ -507,14 +466,14 @@ optim(c(0, 5),
 
 
 ### jackknife single
-# t + norm model (modelling constant)
+# t + norm model (modelling intercept)
 weightedlogliknu =
   function(x) { # global variables: normx normddx
     g = x[1]; # not used
     sqrts = x[2];
     y = x[3];
     nu = x[4];
-    c = x[5]; # constant
+    c = x[5]; # intercept
     #    z = (y - c*normx);
     z = (y - c*sqrt(1-g)*normx);
     log( 
@@ -567,7 +526,7 @@ Nmax=N2max; xkeep=x2keep; wkeep=1/pmax(1,x2unweightedkeep); ykeep=y2keep
 h22jk = jackknifeML()
 
 
-# modelling constant
+# modelling intercept
 weightedlogliknu =
   function(x) { # global variables: h1 h2 c1 c2 normx1 normx2 normddx1dx2
     sqrtv1 = x[1];
