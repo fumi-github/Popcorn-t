@@ -90,3 +90,99 @@ optim(c(0, 5),
       lower=c(-0.99, 2.01),
       upper=c(0.99, 10),
       method="L-BFGS-B");
+
+# EAS (jackknife)
+# The computation below takes very long
+Nmax = max(data$N1);
+keep = (data$score1<=200 & data$score2<=200 & data$scoreX<=200 &
+        data$score1>=1   & data$score2>=1   & data$scoreX>=1);
+xkeepall = (data$score1*(data$N1/Nmax))[keep];
+ykeepall = data$Z1[keep];
+wkeepall = 1/pmax(1,
+                  (dataunweighted$score1[match(data$id, dataunweighted$id)])[keep]);
+njackknife = 200;
+hlist = c();
+for (i in 1:njackknife) {
+  print(i);
+  omit = seq(floor((i-1)/njackknife*length(xkeepall)) + 1,
+             floor(i/njackknife*length(xkeepall)));
+  xkeep = xkeepall[-omit];
+  ykeep = ykeepall[-omit];
+  wkeep = wkeepall[-omit];
+  a1 = 
+    optim(c(0.5, 2.5, 1),
+          nll_onepop_snpt_envnorm_intercept,
+          lower=c(0.01, 2.01, 0.5),
+          upper=c(0.99, 10, 1.5),
+          method="L-BFGS-B");
+  hlist = c(hlist, a1$par);
+}
+h1jk = matrix(hlist, ncol=3, byrow=TRUE);
+
+# EUR (jackknife)
+# The computation below takes very long
+Nmax = max(data$N2);
+keep = (data$score1<=200 & data$score2<=200 & data$scoreX<=200 &
+        data$score1>=1   & data$score2>=1   & data$scoreX>=1);
+xkeepall = (data$score2*(data$N2/Nmax))[keep];
+ykeepall = data$Z2[keep];
+wkeepall = 1/pmax(1,
+                  (dataunweighted$score2[match(data$id, dataunweighted$id)])[keep]);
+njackknife = 200;
+hlist = c();
+for (i in 1:njackknife) {
+  print(i);
+  omit = seq(floor((i-1)/njackknife*length(xkeepall)) + 1,
+             floor(i/njackknife*length(xkeepall)));
+  xkeep = xkeepall[-omit];
+  ykeep = ykeepall[-omit];
+  wkeep = wkeepall[-omit];
+  a1 = 
+    optim(c(0.5, 2.5, 1),
+          nll_onepop_snpt_envnorm_intercept,
+          lower=c(0.01, 2.01, 0.5),
+          upper=c(0.99, 10, 1.5),
+          method="L-BFGS-B");
+  hlist = c(hlist, a1$par);
+}
+h2jk = matrix(hlist, ncol=3, byrow=TRUE);
+
+# EAS vs EUR (jackknife)
+# The computation below takes very long
+N1max = max(data$N1);
+N2max = max(data$N2);
+NXmax = max(sqrt(data$N1*as.numeric(data$N2))); # avoid integer overflow when multiplying
+keep = (data$score1<=200 & data$score2<=200 & data$scoreX<=200 &
+          data$score1>=1   & data$score2>=1   & data$scoreX>=1);
+x1keepall = (data$score1*(data$N1/N1max))[keep];
+x2keepall = (data$score2*(data$N2/N2max))[keep];
+xXkeepall = (data$scoreX*(sqrt(data$N1*as.numeric(data$N2))/NXmax))[keep];
+y1keepall = data$Z1[keep];
+y2keepall = data$Z2[keep];
+wkeepall = 1/pmax(1,
+                  (dataunweighted$scoreX[match(data$id, dataunweighted$id)])[keep]);
+njackknife = 200;
+hlist = c();
+for (i in 1:njackknife) {
+  print(i);
+  omit = seq(floor((i-1)/njackknife*length(x1keepall)) + 1,
+             floor(i/njackknife*length(x1keepall)));
+  x1keep = x1keepall[-omit];
+  x2keep = x2keepall[-omit];
+  xXkeep = xXkeepall[-omit];
+  y1keep = y1keepall[-omit];
+  y2keep = y2keepall[-omit];
+  wkeep = wkeepall[-omit];
+  a1 = 
+    optim(c(0, 5),
+          h1 = 0.06630128, # heritability
+          h2 = 0.1180501,
+          a1 = 0.98506231, # intercept for LD score regression
+          a2 = 0.9958312,
+          nll_twopop_snpt_envnorm_intercept,
+          lower=c(-0.99, 2.01),
+          upper=c(0.99, 10),
+          method="L-BFGS-B");
+  hlist = c(hlist, a1$par);
+}
+hxjk = matrix(hlist, ncol=2, byrow=TRUE);
