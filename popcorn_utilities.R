@@ -67,7 +67,7 @@ windowoverlapcount = function(w1, w2) {
 
 # n is sample size
 gwaspowerncp = function (n, ncp, alpha) {
-  if (ncp==Inf) {
+  if (max(ncp)==Inf) { # Accurate only in 1-dim. TODO: fix
     1
   } else {
     threshold = qf(alpha, 1, n-2, lower.tail=F);
@@ -84,3 +84,43 @@ normx2 = as.numeric(matrix(normx, nrow=length(normx), ncol=length(normx), byrow=
 normddx1dx2 = dnorm(normx1)*dx*dnorm(normx2)*dx;
 rm(dx);
 lockBinding(c("normx", "normddx", "normx1", "normx2", "normddx1dx2"), .GlobalEnv);
+
+# Transform from a bivariate normal distribution with covariance matrix
+# ((1, r), (r, 1)) to one with the covariance matrix ((1, s), (s, 1))
+# by quantile normalization.
+# Absolute values of r, s should be smaller than one.
+# TODO simplify the code by using math
+bivnormchangecor =
+  function (x, r, s) {
+    cosX1 = cos(0.25*pi-0.5*acos(r));
+    cosX2 = cos(0.25*pi+0.5*acos(r));
+    sinX1 = sin(0.25*pi-0.5*acos(r));
+    sinX2 = sin(0.25*pi+0.5*acos(r));
+    cosY1 = cos(0.25*pi-0.5*acos(s));
+    cosY2 = cos(0.25*pi+0.5*acos(s));
+    sinY1 = sin(0.25*pi-0.5*acos(s));
+    sinY2 = sin(0.25*pi+0.5*acos(s));
+    if (! is.matrix(x)) {
+      x = matrix(x, nrow=1)
+    }
+    U = x %*%
+      matrix(c( sinX2, -cosX2,
+                -sinX1,  cosX1) /
+               (cosX1*sinX2-sinX1*cosX2),
+             nrow=2, byrow=T);
+    U %*%
+      matrix(c(cosY1, cosY2,
+               sinY1, sinY2),
+             nrow=2, byrow=T)
+  }
+
+# For no correlation; ie var = ((1,0),(0,1))
+bivnormtomvt =
+  function (x, df) {
+    if (! is.matrix(x)) {
+      x = matrix(x, nrow=1)
+    }
+    rpre = sqrt(apply(x^2, 1, sum));
+    rpost = sqrt((df-2)*(exp(rpre^2/df)-1));
+    x/rpre*rpost
+  }
