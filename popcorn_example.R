@@ -214,4 +214,4 @@ twopop_expected_number_of_gwsignificant_loci(
   h1 = 0.06630128,
   h2 = 0.1180501,
   gencor = 0.758,
-  nu = 3.1)
+  nu = 3.1);
