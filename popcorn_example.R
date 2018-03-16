@@ -4,7 +4,8 @@ source("popcorn_ML.R")
 # We need to use multiple CPU cores for parallel computation
 library(parallel)
 cl = makeCluster(detectCores()-1)
-clusterExport(cl, c("normx", "normddx", "normx1", "normx2", "normddx1dx2"));
+clusterExport(cl, c("normx", "normddx", "normx1", "normx2", "normddx1dx2",
+                    "bivnormchangecor", "bivnormtomvt"));
 
 
 ###
@@ -12,8 +13,8 @@ clusterExport(cl, c("normx", "normddx", "normx1", "normx2", "normddx1dx2"));
 ###
 
 # Download processed data from
-# http://103.253.147.127/PUBLICATIONS/popcorn_EASLDL_EURLDL_dumpdata.zip
-# http://www.fumihiko.takeuchi.name//PUBLICATIONS/popcorn_EASLDL_EURLDL_dumpdata.zip
+# http://103.253.147.127/popcorn/popcorn_EASLDL_EURLDL_dumpdata.zip
+# http://www.fumihiko.takeuchi.name/popcorn/popcorn_EASLDL_EURLDL_dumpdata.zip
 # The original data sources are
 # East Asian lipid GWAS by AGEN (PubMed ID 28334899)
 # http://blog.nus.edu.sg/agen/summary-statistics/lipids/
@@ -205,3 +206,12 @@ hxjk = matrix(hlist, ncol=2, byrow=TRUE);
 ### Power calculation of GWAS under given heritability parameters (Fig. 3)
 ###
 
+# Download processed data from
+# http://103.253.147.127/popcorn/popcorn_EAS_EUR.cscore_h2weightbetasim.zip
+# http://www.fumihiko.takeuchi.name/popcorn/popcorn_EAS_EUR.cscore_h2weightbetasim.zip
+
+expected_number_of_gwsignificant_loci(
+  h1 = 0.06630128,
+  h2 = 0.1180501,
+  gencor = 0.758,
+  nu = 3.1)
