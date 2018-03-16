@@ -7,7 +7,20 @@ cl = makeCluster(detectCores()-1)
 clusterExport(cl, c("normx", "normddx", "normx1", "normx2", "normddx1dx2"));
 
 
-inputfilebase = "~/human/popcorn/lipid/EASLDL_EURLDL.out.dumpdata";
+###
+### Load example data for LDL
+###
+
+# Download processed data from
+# http://103.253.147.127/PUBLICATIONS/popcorn_EASLDL_EURLDL_dumpdata.zip
+# http://www.fumihiko.takeuchi.name//PUBLICATIONS/popcorn_EASLDL_EURLDL_dumpdata.zip
+# The original data sources are
+# East Asian lipid GWAS by AGEN (PubMed ID 28334899)
+# http://blog.nus.edu.sg/agen/summary-statistics/lipids/
+# European ancestry lipid GWAS by GLGC (PubMed ID 24097068)
+# http://csg.sph.umich.edu/abecasis/public/lipids2013/
+
+inputfilebase = "~/lipid/EASLDL_EURLDL.out.dumpdata";
 dataunweighted = read.csv(inputfilebase,
                           header=T, stringsAsFactors=F);
 dataunweighted = dataunweighted[order(dataunweighted$chr, dataunweighted$pos), ]
