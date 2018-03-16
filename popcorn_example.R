@@ -1,7 +1,7 @@
 source("popcorn_utilities.R")
 source("popcorn_ML.R")
 
-# We need to use multiple CPU cores for parallele computation
+# We need to use multiple CPU cores for parallel computation
 library(parallel)
 cl = makeCluster(detectCores()-1)
 clusterExport(cl, c("normx", "normddx", "normx1", "normx2", "normddx1dx2"));
@@ -20,10 +20,10 @@ clusterExport(cl, c("normx", "normddx", "normx1", "normx2", "normddx1dx2"));
 # European ancestry lipid GWAS by GLGC (PubMed ID 24097068)
 # http://csg.sph.umich.edu/abecasis/public/lipids2013/
 
-inputfilebase = "~/lipid/EASLDL_EURLDL.out.dumpdata";
+inputfilebase = "lipid/EASLDL_EURLDL.out.dumpdata";
 dataunweighted = read.csv(inputfilebase,
                           header=T, stringsAsFactors=F);
-dataunweighted = dataunweighted[order(dataunweighted$chr, dataunweighted$pos), ]
+dataunweighted = dataunweighted[order(dataunweighted$chr, dataunweighted$pos), ];
 
 inputfile = sub("out", "out_h2weight", inputfilebase);
 data = read.csv(inputfile,
@@ -32,7 +32,7 @@ data = data[order(data$chr, data$pos), ];
 data = data[data$N1 >= 0.5*max(data$N1) & data$N2 >= 0.5*max(data$N2), ];
 data = data[!is.na(data$Z1), ];
 
-M = 4155885 #Total number of common SNPs in 1000G EAS_EUR shared dataset
+M = 4155885; #Total number of common SNPs in 1000G EAS_EUR shared dataset
 
 
 ###
@@ -199,3 +199,9 @@ for (i in 1:njackknife) {
   hlist = c(hlist, a1$par);
 }
 hxjk = matrix(hlist, ncol=2, byrow=TRUE);
+
+
+###
+### Power calculation of GWAS under given heritability parameters (Fig. 3)
+###
+
