@@ -1,4 +1,4 @@
-expected_number_of_gwsignificant_loci = function(h1, h2, gencor, nu) {
+twopop_expected_number_of_gwsignificant_loci = function(h1, h2, gencor, nu) {
   for(trial in 0:99) {
     print(paste0("Trial ",trial));
     foo = read.table(

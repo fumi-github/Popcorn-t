@@ -210,7 +210,7 @@ hxjk = matrix(hlist, ncol=2, byrow=TRUE);
 # http://103.253.147.127/popcorn/popcorn_EAS_EUR.cscore_h2weightbetasim.zip
 # http://www.fumihiko.takeuchi.name/popcorn/popcorn_EAS_EUR.cscore_h2weightbetasim.zip
 
-expected_number_of_gwsignificant_loci(
+twopop_expected_number_of_gwsignificant_loci(
   h1 = 0.06630128,
   h2 = 0.1180501,
   gencor = 0.758,
