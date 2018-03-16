@@ -1,5 +1,6 @@
 source("popcorn_utilities.R")
 source("popcorn_ML.R")
+source("popcorn_simulation.R")
 
 # We need to use multiple CPU cores for parallel computation
 library(parallel)
