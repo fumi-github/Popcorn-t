@@ -210,9 +210,22 @@ hxjk = matrix(hlist, ncol=2, byrow=TRUE);
 # Download processed data from
 # http://103.253.147.127/popcorn/popcorn_EAS_EUR.cscore_h2weightbetasim.zip
 # http://www.fumihiko.takeuchi.name/popcorn/popcorn_EAS_EUR.cscore_h2weightbetasim.zip
+# This is a big zip file, which requires newer versions of archiving programs.
 
-twopop_expected_number_of_gwsignificant_loci(
+# The computation below took xx hours xx minutes using one core.
+# Results should show the following number of detectable loci
+#                         EAS
+#                         N=100K    N=200K    N=500K
+#                      | 28.06231  65.69546 198.29501
+#            ----------+------------------------------
+# EUR N=100K  58.52787 | 16.54320  27.69603  42.67319 
+#     N=200K 136.75648 | 21.45527  41.06521  77.82975 
+#     N=500K 382.88831 | 25.56388  55.45929 134.84733
+Zsim = twopop_Zsim(
   h1 = 0.06630128,
   h2 = 0.1180501,
   gencor = 0.758,
   nu = 3.1);
+data[, names(Zsim)] = Zsim;
+rm(Zsim);
+twopop_expected_number_of_gwsignificant_loci();

@@ -1,4 +1,4 @@
-twopop_expected_number_of_gwsignificant_loci = function(h1, h2, gencor, nu) {
+twopop_Zsim = function(h1, h2, gencor, nu) {
   for(trial in 0:99) {
     print(paste0("Trial ",trial));
     foo = read.table(
@@ -44,7 +44,10 @@ twopop_expected_number_of_gwsignificant_loci = function(h1, h2, gencor, nu) {
     data[, paste0("Zsim1_",trial)] = data$Zpartsim1_0ct * sqrt(h1/M);
     data[, paste0("Zsim2_",trial)] = data$Zpartsim2_0ct * sqrt(h2/M);
   }
+  data[, c(paste0("Zsim1_",0:99), paste0("Zsim2_",0:99))];
+}
 
+twopop_expected_number_of_gwsignificant_loci = function () {
   ### Number of detectable locus
   distance = 500 * 1000;
   result = c();
