@@ -66,14 +66,17 @@ windowoverlapcount = function(w1, w2) {
 }
 
 # n is sample size
-gwaspowerncp = function (n, ncp, alpha) {
-  if (max(ncp)==Inf) { # Accurate only in 1-dim. TODO: fix
-    1
-  } else {
-    threshold = qf(alpha, 1, n-2, lower.tail=F);
-    pf(threshold, 1, n-2, ncp=ncp, lower.tail=F);
-  }
-}
+gwaspowerncp = 
+  Vectorize(
+    function (n, ncp, alpha) {
+      if (ncp==Inf) {
+        1
+      } else {
+        threshold = qf(alpha, 1, n-2, lower.tail=F);
+        pf(threshold, 1, n-2, ncp=ncp, lower.tail=F);
+      }
+    }
+  )
 
 # For numerical integration
 dx = 0.25;
