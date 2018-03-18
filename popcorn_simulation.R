@@ -52,6 +52,7 @@ twopop_expected_number_of_gwsignificant_loci = function () {
   distance = 500 * 1000;
   result = c();
   for (trial in 0:99) {
+    print(paste0("Trial ",trial));
     x = data[, paste0("Zsim1_",trial)];
     x = x / pmax(abs(x),1);
     n = 1*10^5;
