@@ -212,7 +212,7 @@ hxjk = matrix(hlist, ncol=2, byrow=TRUE);
 # http://www.fumihiko.takeuchi.name/popcorn/popcorn_EAS_EUR.cscore_h2weightbetasim.zip
 # This is a big zip file, which requires newer versions of archiving programs.
 
-# The computation below took xx hours xx minutes using one core.
+# The computation below took 8 hours 35 minutes using one core.
 # Results should show the following number of detectable loci
 #                         EAS
 #                         N=100K    N=200K    N=500K
