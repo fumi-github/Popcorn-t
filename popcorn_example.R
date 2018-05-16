@@ -16,11 +16,14 @@ clusterExport(cl, c("normx", "normddx", "normx1", "normx2", "normddx1dx2",
 # Download processed data from
 # http://103.253.147.127/popcorn/popcorn_EASLDL_EURLDL_dumpdata.zip
 # http://www.fumihiko.takeuchi.name/popcorn/popcorn_EASLDL_EURLDL_dumpdata.zip
-# The original data sources are
+# The original GWAS data sources are
 # East Asian lipid GWAS by AGEN (PubMed ID 28334899)
 # http://blog.nus.edu.sg/agen/summary-statistics/lipids/
 # European ancestry lipid GWAS by GLGC (PubMed ID 24097068)
 # http://csg.sph.umich.edu/abecasis/public/lipids2013/
+# The LD scores were computed from 1000 Genomes reference data using the Popcorn program
+# https://github.com/brielin/popcorn
+# https://github.com/fumi-github/Popcorn
 
 inputfilebase = "lipid/EASLDL_EURLDL.out.dumpdata";
 dataunweighted = read.csv(inputfilebase,
