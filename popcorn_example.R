@@ -22,6 +22,7 @@ clusterExport(cl, c("normx", "normddx", "normx1", "normx2", "normddx1dx2",
 # European ancestry lipid GWAS by GLGC (PubMed ID 24097068)
 # http://csg.sph.umich.edu/abecasis/public/lipids2013/
 # The LD scores were computed from 1000 Genomes reference data using the Popcorn program
+# (compute mode with --h2weight --use_bias options)
 # https://github.com/brielin/popcorn
 # https://github.com/fumi-github/Popcorn
 
