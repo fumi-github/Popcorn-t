@@ -5,3 +5,7 @@ R-code for SNP-based heritability analyses.  The methodology is an extension of 
 
 Run popcorn_example.R
 
+Please cite:
+Takeuchi et al. Interethnic analyses of blood pressure loci in populations of East Asian and European descent.
+Nature Communications (2018) 9:5052
+https://www.nature.com/articles/s41467-018-07345-0
